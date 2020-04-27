@@ -5,12 +5,17 @@
 #include <vector>
 #include <iostream>
 #include <fstream>
+#include <sstream>
 
 using namespace std;
 
 class Loader {
 public:
-	static vector<char> LoadFile(string fileName);
+	Loader();
+
+	// methods
+	vector<char> LoadRawTextFile(string filePath);
+	vector<vector<char>> LoadFastQReads(string filePath, int amountToRead);
 private:
 };
 
