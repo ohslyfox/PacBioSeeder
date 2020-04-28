@@ -16,12 +16,14 @@ int main()
 {
 	Loader loader;
 	auto referenceGenome = loader.LoadRawTextFile(".\\testsim\\testsim.txt");
-	auto pacBioReads = loader.LoadFastQReads(".\\testsim\\testsim_0001.fastq", 1);
-	HashMapClusteringScheme* scheme = new HashMapClusteringScheme(referenceGenome, 5);
-	auto res = scheme->ExecuteScheme(pacBioReads[0]);
+	auto pacBioReads = loader.LoadFastQReads(".\\testsim\\testsim_0001.fastq", 4);
+	HashMapClusteringScheme* scheme = new HashMapClusteringScheme(referenceGenome, 9);
 
-	for (auto location : res) {
-		cout << location << ", ";
+	for (int i = 0; i < 4; i++) {
+		auto res = scheme->ExecuteScheme(pacBioReads[i], 4);
+		for (auto location : res) {
+			cout << location << ", ";
+		}
+		cout << endl << endl;
 	}
-	cout << endl;
 }
