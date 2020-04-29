@@ -29,6 +29,7 @@ public:
 	Scheme Scheme;
 	string FileName;
 	int KmerLength;
+	int ReadsToTest;
 	vector<char> ReferenceGenome;
 	vector<vector<char>> PacBioReads;
 	vector<int> Solutions;

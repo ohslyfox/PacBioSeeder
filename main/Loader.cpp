@@ -35,7 +35,7 @@ vector<char> Loader::LoadFaFile(string filePath) {
 	return res;
 }
 
-vector<vector<char>> Loader::LoadFastQReads(string filePath) {
+vector<vector<char>> Loader::LoadFastQReads(string filePath, int amountToRead) {
 	vector<vector<char>> res;
 
 	try {
@@ -44,16 +44,16 @@ vector<vector<char>> Loader::LoadFastQReads(string filePath) {
 
 		if (file.is_open()) {
 			int count = 0;
-			//int reads = 0;
+			int reads = 0;
 			string line;
-			while (getline(file, line)) {
+			while (reads < amountToRead && getline(file, line)) {
 				if (count % 4 == 1) {
 					vector<char> read;
 					for(char c : line) {
 						read.push_back(c);
 					}
 					res.push_back(read);
-					//reads++;
+					reads++;
 				}
 				count++;
 			}
@@ -71,17 +71,19 @@ vector<vector<char>> Loader::LoadFastQReads(string filePath) {
 	return res;
 }
 
-vector<int> Loader::LoadSolutions(string filePath) {
+vector<int> Loader::LoadSolutions(string filePath, int amountToRead) {
 	vector<int> res;
 	try {
 		ifstream file;
 		file.open(filePath, ifstream::in);
 
 		if (file.is_open()) {
+			int count = 0;
 			string str;
-			while (getline(file, str)) {
+			while (count < amountToRead && getline(file, str)) {
 				if (str.substr(0,5).compare("s ref") == 0) {
 					res.push_back(stoi(str.substr(6, 4)));
+					count++;
 				}
 			}
 

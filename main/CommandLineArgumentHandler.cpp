@@ -23,9 +23,10 @@ void CommandLineArgumentHandler::Execute(int argc, char** argv) {
 			throw invalid_argument("");
 		}
 		else {
+			int amountToRead = options->ReadsToTest <= 0 ? INT32_MAX : options->ReadsToTest;
 			options->ReferenceGenome = loader.LoadFaFile(options->FileName + ".fa");
-			options->PacBioReads = loader.LoadFastQReads(options->FileName + ".fastq");
-			options->Solutions = loader.LoadSolutions(options->FileName + ".maf");
+			options->PacBioReads = loader.LoadFastQReads(options->FileName + ".fastq", amountToRead);
+			options->Solutions = loader.LoadSolutions(options->FileName + ".maf", amountToRead);
 
 			if (options->ReferenceGenome.size() < 1 ||
 				options->PacBioReads.size() < 1) {
@@ -85,6 +86,10 @@ SchemeOptions* CommandLineArgumentHandler::GetOptionsFromCommandLine() {
 		cout << "Enter k-mer length: ";
 		cin >> value;
 		res->KmerLength = stoi(value);
+
+		cout << "Enter number of reads to test (0 for all): ";
+		cin >> value;
+		res->ReadsToTest = stoi(value);
 
 		cout << "Enter file name: ";
 		cin >> value;
@@ -161,6 +166,9 @@ SchemeOptions* CommandLineArgumentHandler::GetOptionsFromArgs(int argc, char** a
 				}
 				else if (key == "--kmer-length") {
 					res->KmerLength = stoi(value);
+				}
+				else if (key == "--reads") {
+					res->ReadsToTest = stoi(value);
 				}
 			}
 		}

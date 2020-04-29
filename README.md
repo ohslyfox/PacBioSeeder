@@ -4,7 +4,7 @@ https://drive.google.com/open?id=1ndBwZc6wXOE6ee5vfyamLkHmLs-ZUJxB
 
 To run on the command line:
 
-```./pbseed --run-type [runtype] --scheme [scheme] --file-name [filename] --kmer-length [length]```
+```./pbseed --run-type [runtype] --scheme [scheme] --kmer-length [length] --reads [readamount] --file-name [filename]```
 
 runtype:
 	
@@ -17,11 +17,15 @@ scheme:
 * "min-score" - the min score scheme
 * "min-frame" - the min frame scheme
 
-filename:
-
-* file name or path without an extension
-
 length:
 
 * length of k-mers to feed to the scheme
+
+readamount:
+
+* number of pacbio reads to test, 0 for all
+
+filename:
+
+* file name or path without an extension
 	
