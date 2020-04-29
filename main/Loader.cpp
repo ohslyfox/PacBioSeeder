@@ -4,7 +4,7 @@ Loader::Loader() {
 	// do nothing
 }
 
-vector<char> Loader::LoadRawTextFile(string filePath) {
+vector<char> Loader::LoadFaFile(string filePath) {
 	vector<char> res;
 
 	try {
@@ -12,6 +12,10 @@ vector<char> Loader::LoadRawTextFile(string filePath) {
 		file.open(filePath, ifstream::in);
 
 		if (file.is_open()) {
+			// ignore first line
+			string line;
+			getline(file, line);
+
 			res.push_back(file.get());
 			while (file.good()) {
 				res.push_back(file.get());
@@ -31,7 +35,7 @@ vector<char> Loader::LoadRawTextFile(string filePath) {
 	return res;
 }
 
-vector<vector<char>> Loader::LoadFastQReads(string filePath, int amountToRead) {
+vector<vector<char>> Loader::LoadFastQReads(string filePath) {
 	vector<vector<char>> res;
 
 	try {
@@ -40,16 +44,16 @@ vector<vector<char>> Loader::LoadFastQReads(string filePath, int amountToRead) {
 
 		if (file.is_open()) {
 			int count = 0;
-			int reads = 0;
+			//int reads = 0;
 			string line;
-			while (reads < amountToRead && getline(file, line)) {
+			while (getline(file, line)) {
 				if (count % 4 == 1) {
 					vector<char> read;
 					for(char c : line) {
 						read.push_back(c);
 					}
 					res.push_back(read);
-					reads++;
+					//reads++;
 				}
 				count++;
 			}
@@ -57,7 +61,7 @@ vector<vector<char>> Loader::LoadFastQReads(string filePath, int amountToRead) {
 			file.close();
 		}
 		else {
-			throw invalid_argument("");
+			//throw invalid_argument("");
 		}
 	}
 	catch (...) {
@@ -67,7 +71,7 @@ vector<vector<char>> Loader::LoadFastQReads(string filePath, int amountToRead) {
 	return res;
 }
 
-vector<int> Loader::LoadSolutions(string filePath, int amountToRead) {
+vector<int> Loader::LoadSolutions(string filePath) {
 	vector<int> res;
 	try {
 		ifstream file;
@@ -84,7 +88,7 @@ vector<int> Loader::LoadSolutions(string filePath, int amountToRead) {
 			file.close();
 		}
 		else {
-			throw invalid_argument("");
+			//throw invalid_argument("");
 		}
 	}
 	catch (...) {

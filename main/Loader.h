@@ -14,9 +14,9 @@ public:
 	Loader();
 
 	// methods
-	vector<char> LoadRawTextFile(string filePath);
-	vector<vector<char>> LoadFastQReads(string filePath, int amountToRead);
-	vector<int> LoadSolutions(string filePath, int amountToRead);
+	vector<char> LoadFaFile(string filePath);
+	vector<vector<char>> LoadFastQReads(string filePath);
+	vector<int> LoadSolutions(string filePath);
 private:
 };
 

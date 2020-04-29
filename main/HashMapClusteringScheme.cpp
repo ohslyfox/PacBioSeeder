@@ -1,15 +1,60 @@
 #include "HashMapClusteringScheme.h"
 
-HashMapClusteringScheme::HashMapClusteringScheme(vector<char> referenceGenome, int kmerLength) {
-	this->KmerLength = kmerLength;
-	this->GenomeMap = IndexGenome(referenceGenome);
+HashMapClusteringScheme::HashMapClusteringScheme(SchemeOptions* options) {
+	this->Options = options;
+	this->GenomeMap = IndexGenome(options->ReferenceGenome);
 }
 
-vector<int> HashMapClusteringScheme::ExecuteScheme(vector<char> pacBioRead, int tolerance) {
+HashMapClusteringScheme::~HashMapClusteringScheme() {
+	delete this->Options;
+}
+
+void HashMapClusteringScheme::ExecuteScheme() {
+	vector<vector<int>> foundLocations;
+
+	for (int i = 0; i < this->Options->PacBioReads.size(); i++) {
+		switch (this->Options->Scheme) {
+		case SchemeOptions::Scheme::MaxGroup:
+			foundLocations.push_back(MaxGroupScheme(this->Options->PacBioReads[i]));
+			break;
+		case SchemeOptions::Scheme::MinScore:
+			foundLocations.push_back(MinScoreScheme(this->Options->PacBioReads[i]));
+			break;
+		case SchemeOptions::Scheme::MinFrameSize:
+			foundLocations.push_back(MinFrameSizeScheme(this->Options->PacBioReads[i]));
+			break;
+		default:
+			exit(1);
+		}
+	}
+
+	if (foundLocations.size() > 0) {
+		for (int i = 0; i < this->Options->PacBioReads.size(); i++) {
+			switch (this->Options->RunType) {
+			case SchemeOptions::RunType::ResultsOnly:
+				for (int location : foundLocations[i]) {
+					cout << "PacBio read (" << i+1 << ")" << " derived location " << location << "." << endl;
+				}
+				break;
+			case SchemeOptions::RunType::CompareToSolution:
+				for (int location : foundLocations[i]) {
+					cout << "PacBio read (" << i+1 << ")" << " derived location " << location << "." << endl;
+					cout << "Actual location " << this->Options->Solutions[i] << endl;
+					cout << "Delta = " << abs(location - this->Options->Solutions[i]) << endl << endl;
+				}
+				break;
+			default:
+				exit(1);
+			}
+		}
+	}
+}
+
+vector<int> HashMapClusteringScheme::MinFrameSizeScheme(vector<char> pacBioRead) {
 	vector<int> res;
 
 	// generate locations of kmer substrings
-	unordered_set<string> keys = GenerateKmerLengthSubstrings(pacBioRead);
+	unordered_set<string> keys = GenerateKmerLengthSubstrings(pacBioRead, 2);
 
 	vector<int> locationList;
 	unordered_map<int, string> keyMap;
@@ -23,43 +68,18 @@ vector<int> HashMapClusteringScheme::ExecuteScheme(vector<char> pacBioRead, int 
 		}
 	}
 
-	//if (locationList.size() <= 0) return res;
-	//sort(locationList.begin(), locationList.end());
-	//
-	//// group locations by distances based on tolerance
-	////int maxGroupSize = pacBioRead.size() / this->KmerLength;
-	//int currentGroup = locationList[0];
-	////int currentGroupSize = 0;
-	//int lastLocation = INT32_MIN/2;
-	//tolerance = this->KmerLength * 3;
-	//unordered_map<int, vector<int>> groups;
-	//for (int location : locationList) {
-	//	if (location - lastLocation < tolerance) {
-	//		groups[currentGroup].push_back(location);
-	//	}
-	//	else {
-	//		currentGroup = location;
-	//		vector<int> newGroupList;
-	//		newGroupList.push_back(location);
-	//		groups[currentGroup] = newGroupList;
-	//		//currentGroupSize++;
-	//	}
-	//	lastLocation = location;
-	//}
+	vector<Frame> frames;
+	CalculateDensityConcentration(0, this->GenomeMap.size(), locationList, &frames);
 
-
-	vector<Frame> densities;
-	CalculateDensityConcentration(0, this->GenomeMap.size(), locationList, &densities);
-	
-	if (densities.size() > 0) {
+	if (frames.size() > 0) {
 		// find min frame size
-		Frame min = densities[0];
-		for (Frame density : densities) {
-			if (density.frameSize < min.frameSize) {
-				min = density;
+		Frame min = frames[0];
+		for (Frame frame : frames) {
+			if (frame.frameSize < min.frameSize) {
+				min = frame;
 			}
 		}
-		
+
 		int currentLocation = min.left;
 		while (keyMap.find(currentLocation) == keyMap.end()) {
 			currentLocation++;
@@ -67,12 +87,48 @@ vector<int> HashMapClusteringScheme::ExecuteScheme(vector<char> pacBioRead, int 
 		res.push_back(currentLocation);
 	}
 
+	return res;
+}
 
+vector<int> HashMapClusteringScheme::MaxGroupScheme(vector<char> pacBioRead) {
+	vector<int> res;
 
+	// generate locations of kmer substrings
+	unordered_set<string> keys = GenerateKmerLengthSubstrings(pacBioRead, 1);
+
+	vector<int> locationList;
+	for (string key : keys) {
+		if (this->GenomeMap.find(key) != this->GenomeMap.end()) {
+			auto locations = this->GenomeMap[key];
+			for (int location : locations) {
+				locationList.push_back(location);
+			}
+		}
+	}
+
+	sort(locationList.begin(), locationList.end());
+
+	// group locations by distances based on tolerance
+	int tolerance = 4;
+	int currentGroup = locationList[0];
+	int lastLocation = INT32_MIN / 2;
+	unordered_map<int, vector<int>> groups;
+	for (int location : locationList) {
+		if (location - lastLocation < tolerance) {
+			groups[currentGroup].push_back(location);
+		}
+		else {
+			currentGroup = location;
+			vector<int> newGroupList;
+			newGroupList.push_back(location);
+			groups[currentGroup] = newGroupList;
+		}
+		lastLocation = location;
+	}
 
 	// find groups with biggest clumps
-	/*int currentMax = 0;
-	for(auto group : groups) {
+	int currentMax = 0;
+	for (auto group : groups) {
 		if (group.second.size() > currentMax) {
 			currentMax = group.second.size();
 		}
@@ -82,10 +138,49 @@ vector<int> HashMapClusteringScheme::ExecuteScheme(vector<char> pacBioRead, int 
 		if (group.second.size() == currentMax) {
 			res.push_back(group.first);
 		}
-	}*/
+	}
+
+	return res;
+}
+
+vector<int> HashMapClusteringScheme::MinScoreScheme(vector<char> pacBioRead) {
+	vector<int> res;
+
+	// generate locations of kmer substrings
+	unordered_set<string> keys = GenerateKmerLengthSubstrings(pacBioRead, 1);
+
+	vector<int> locationList;
+	for (string key : keys) {
+		if (this->GenomeMap.find(key) != this->GenomeMap.end()) {
+			auto locations = this->GenomeMap[key];
+			for (int location : locations) {
+				locationList.push_back(location);
+			}
+		}
+	}
+
+	sort(locationList.begin(), locationList.end());
+
+	// group locations by distances based on tolerance
+	int tolerance = 4;
+	int currentGroup = locationList[0];
+	int lastLocation = INT32_MIN / 2;
+	unordered_map<int, vector<int>> groups;
+	for (int location : locationList) {
+		if (location - lastLocation < tolerance) {
+			groups[currentGroup].push_back(location);
+		}
+		else {
+			currentGroup = location;
+			vector<int> newGroupList;
+			newGroupList.push_back(location);
+			groups[currentGroup] = newGroupList;
+		}
+		lastLocation = location;
+	}
 
 	// score groups
-	/*unordered_map<int, int> locationScores;
+	unordered_map<int, int> locationScores;
 	int minScore = INT32_MAX;
 	for (auto group : groups) {
 		int currentScore = 0;
@@ -104,18 +199,17 @@ vector<int> HashMapClusteringScheme::ExecuteScheme(vector<char> pacBioRead, int 
 		if (score.second == minScore) {
 			res.push_back(score.first);
 		}
-	}*/
+	}
 
-	//sort(res.begin(), res.end());
 	return res;
 }
 
 unordered_map<string, vector<int>> HashMapClusteringScheme::IndexGenome(vector<char> genomeToIndex) {
 	unordered_map<string, vector<int>> res;
 
-	for (unsigned int i = 0; i < genomeToIndex.size() - this->KmerLength; i++) {
+	for (unsigned int i = 0; i < genomeToIndex.size() - this->Options->KmerLength; i++) {
 		string currentString = "";
-		for (int j = i; j < i + this->KmerLength; j++) {
+		for (int j = i; j < i + this->Options->KmerLength; j++) {
 			currentString += genomeToIndex.at(j);
 		}
 
@@ -133,12 +227,12 @@ unordered_map<string, vector<int>> HashMapClusteringScheme::IndexGenome(vector<c
 	return res;
 }
 
-unordered_set<string> HashMapClusteringScheme::GenerateKmerLengthSubstrings(vector<char> read) {
+unordered_set<string> HashMapClusteringScheme::GenerateKmerLengthSubstrings(vector<char> read, int multiplier) {
 	unordered_set<string> res;
 
-	for (int i = 0; i < read.size() - this->KmerLength; i+= this->KmerLength * 2) {
+	for (int i = 0; i < read.size() - this->Options->KmerLength; i+= this->Options->KmerLength * multiplier) {
 		string currentString = "";
-		for (int j = i; j < i + this->KmerLength; j++) {
+		for (int j = i; j < i + this->Options->KmerLength; j++) {
 			currentString += read.at(j);
 		}
 
