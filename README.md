@@ -2,7 +2,8 @@
 Sims can be found here:
 https://drive.google.com/open?id=1ndBwZc6wXOE6ee5vfyamLkHmLs-ZUJxB
 
-To run on the command line
+To run on the command line:
+
 ```./pbseed --run-type [runtype] --scheme [scheme] --file-name [filename] --kmer-length [length]```
 
 runtype:
