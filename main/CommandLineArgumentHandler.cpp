@@ -101,14 +101,16 @@ SchemeOptions* CommandLineArgumentHandler::GetOptionsFromArgs(int argc, char** a
 
 		string key;
 		string value;
-		for (int i = 0; i < argc; i++) {
-			if (i % 2 == 0) {
+		for (int i = 1; i < argc; i++) {
+			if ((i - 1) % 2 == 0) {
 				key = argv[i];
+				cout << key << endl;
 				if (key.find("--") == string::npos) {
 					throw invalid_argument("");
 				}
 			}
 			else {
+				cout << value << endl;
 				value = argv[i];
 				if (key == "--run-type") {
 					if (res->RunType == SchemeOptions::RunType::NoRunType) {
