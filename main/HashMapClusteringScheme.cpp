@@ -69,22 +69,26 @@ vector<int> HashMapClusteringScheme::MinFrameSizeScheme(vector<char> pacBioRead)
 	}
 
 	vector<Frame> frames;
-	CalculateDensityConcentration(0, this->GenomeMap.size(), locationList, &frames);
+	CalculateDensityConcentration(0, this->Options->ReferenceGenome.size(), locationList, &frames);
 
 	if (frames.size() > 0) {
 		// find min frame size
-		Frame min = frames[0];
+		int min = INT32_MAX;
 		for (Frame frame : frames) {
-			if (frame.frameSize < min.frameSize) {
-				min = frame;
+			if (frame.frameSize < min) {
+				min = frame.frameSize;
 			}
 		}
 
-		int currentLocation = min.left;
-		while (keyMap.find(currentLocation) == keyMap.end()) {
-			currentLocation++;
+		for (Frame frame : frames) {
+			if (frame.frameSize == min) {
+				int currentLocation = frame.left;
+				while (keyMap.find(currentLocation) == keyMap.end()) {
+					currentLocation++;
+				}
+				res.push_back(currentLocation);
+			}
 		}
-		res.push_back(currentLocation);
 	}
 
 	return res;
