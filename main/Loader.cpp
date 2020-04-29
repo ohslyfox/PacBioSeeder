@@ -66,3 +66,30 @@ vector<vector<char>> Loader::LoadFastQReads(string filePath, int amountToRead) {
 
 	return res;
 }
+
+vector<int> Loader::LoadSolutions(string filePath, int amountToRead) {
+	vector<int> res;
+	try {
+		ifstream file;
+		file.open(filePath, ifstream::in);
+
+		if (file.is_open()) {
+			string str;
+			while (getline(file, str)) {
+				if (str.substr(0,5).compare("s ref") == 0) {
+					res.push_back(stoi(str.substr(6, 4)));
+				}
+			}
+
+			file.close();
+		}
+		else {
+			throw invalid_argument("");
+		}
+	}
+	catch (...) {
+		cout << "Error reading file " << filePath;
+	}
+
+	return res;
+}
