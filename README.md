@@ -31,5 +31,5 @@ filename:
 
 outfilename:
 
-* output file name without an extension (leave blank or use "console" for console output).
+* output file name without an extension (exclude this option or use "console" for console output).
 	
