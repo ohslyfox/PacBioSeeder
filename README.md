@@ -1,5 +1,5 @@
 # PacBioSeeder
-Sims can be found here:
+Test data and results can be found here:
 https://drive.google.com/open?id=1ndBwZc6wXOE6ee5vfyamLkHmLs-ZUJxB
 
 To run on the command line:
