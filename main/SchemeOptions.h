@@ -28,6 +28,7 @@ public:
 	RunType RunType;
 	Scheme Scheme;
 	string FileName;
+	string OutputFileName;
 	int KmerLength;
 	int ReadsToTest;
 	vector<char> ReferenceGenome;

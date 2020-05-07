@@ -23,16 +23,7 @@ void CommandLineArgumentHandler::Execute(int argc, char** argv) {
 			throw invalid_argument("");
 		}
 		else {
-			int amountToRead = options->ReadsToTest <= 0 ? INT32_MAX : options->ReadsToTest;
-			options->ReferenceGenome = loader.LoadFaFile(options->FileName + ".fa");
-			options->PacBioReads = loader.LoadFastQReads(options->FileName + ".fastq", amountToRead);
-			options->Solutions = loader.LoadSolutions(options->FileName + ".maf", amountToRead);
-
-			if (options->ReferenceGenome.size() < 1 ||
-				options->PacBioReads.size() < 1) {
-
-				throw invalid_argument("");
-			}
+			loader.LoadFileIntoOptions(options);
 		}
 
 		// run scheme
@@ -52,36 +43,11 @@ SchemeOptions* CommandLineArgumentHandler::GetOptionsFromCommandLine() {
 	try {
 		cout << "Enter run type: ";
 		cin >> value;
-		if (value == "execute") {
-			res->RunType = SchemeOptions::RunType::ResultsOnly;
-		}
-		else if (value == "compare") {
-			res->RunType = SchemeOptions::RunType::CompareToSolution;
-		}
-		else {
-			throw invalid_argument("");
-		}
+		res->RunType = ParseValueForRunType(value);
 
 		cout << "Enter scheme type: ";
 		cin >> value;
-		if (value == "max-group") {
-			res->Scheme = SchemeOptions::Scheme::MaxGroup;
-		}
-		else if (value == "min-score") {
-			res->Scheme = SchemeOptions::Scheme::MinScore;
-		}
-		else if (value == "min-frame") {
-			res->Scheme = SchemeOptions::Scheme::MinFrameSize;
-		}
-		else if (value == "max-density") {
-			res->Scheme = SchemeOptions::Scheme::MaxDensity;
-		}
-		else if (value == "min-frame-max-density") {
-			res->Scheme = SchemeOptions::Scheme::MinFrameMaxDensity;
-		}
-		else {
-			throw invalid_argument("");
-		}
+		res->Scheme = ParseValueForScheme(value);
 
 		cout << "Enter k-mer length: ";
 		cin >> value;
@@ -94,75 +60,45 @@ SchemeOptions* CommandLineArgumentHandler::GetOptionsFromCommandLine() {
 		cout << "Enter file name: ";
 		cin >> value;
 		res->FileName = value;
+
+		cout << "Enter output file name (\"console\" for console output): ";
+		cin >> value;
+		res->OutputFileName = value;
 		cout << endl;
 	}
-	catch (...) {}
+	catch (...) { exit(1); }
 	return res;
 }
 
 SchemeOptions* CommandLineArgumentHandler::GetOptionsFromArgs(int argc, char** argv) {
 	SchemeOptions* res = new SchemeOptions();
 	try {
-
 		string key;
 		string value;
+		vector<string> keysFound;
 		for (int i = 1; i < argc; i++) {
 			if ((i - 1) % 2 == 0) {
 				key = argv[i];
 				if (key.find("--") == string::npos) {
 					throw invalid_argument("");
 				}
+				if (find(keysFound.begin(), keysFound.end(), key) == keysFound.end()) {
+					keysFound.push_back(key);
+				}
+				else {
+					throw invalid_argument("");
+				}
 			}
 			else {
 				value = argv[i];
 				if (key == "--run-type") {
-					if (res->RunType == SchemeOptions::RunType::NoRunType) {
-						if (value == "execute") {
-							res->RunType = SchemeOptions::RunType::ResultsOnly;
-						}
-						else if (value == "compare") {
-							res->RunType = SchemeOptions::RunType::CompareToSolution;
-						}
-						else {
-							throw invalid_argument("");
-						}
-					}
-					else {
-						throw invalid_argument("");
-					}
+					res->RunType = ParseValueForRunType(value);
 				}
 				else if (key == "--scheme") {
-					if (res->Scheme == SchemeOptions::Scheme::NoScheme) {
-						if (value == "max-group") {
-							res->Scheme = SchemeOptions::Scheme::MaxGroup;
-						}
-						else if (value == "min-score") {
-							res->Scheme = SchemeOptions::Scheme::MinScore;
-						}
-						else if (value == "min-frame") {
-							res->Scheme = SchemeOptions::Scheme::MinFrameSize;
-						}
-						else if (value == "max-density") {
-							res->Scheme = SchemeOptions::Scheme::MaxDensity;
-						}
-						else if (value == "min-frame-max-density") {
-							res->Scheme = SchemeOptions::Scheme::MinFrameMaxDensity;
-						}
-						else {
-							throw invalid_argument("");
-						}
-					}
-					else {
-						throw invalid_argument("");
-					}
+					res->Scheme = ParseValueForScheme(value);
 				}
 				else if (key == "--file-name") {
-					if (res->FileName == "") {
-						res->FileName = value;
-					}
-					else {
-						throw invalid_argument("");
-					}
+					res->FileName = value;
 				}
 				else if (key == "--kmer-length") {
 					res->KmerLength = stoi(value);
@@ -170,9 +106,57 @@ SchemeOptions* CommandLineArgumentHandler::GetOptionsFromArgs(int argc, char** a
 				else if (key == "--reads") {
 					res->ReadsToTest = stoi(value);
 				}
+				else if (key == "--output") {
+					res->OutputFileName = value;
+				}
 			}
 		}
 	}
-	catch (...) {}
+	catch (...) { exit(1); }
+	return res;
+}
+
+enum SchemeOptions::RunType CommandLineArgumentHandler::ParseValueForRunType(string value) {
+	enum SchemeOptions::RunType res = SchemeOptions::RunType::NoRunType;
+	try {
+		if (value == "execute") {
+			res = SchemeOptions::RunType::ResultsOnly;
+		}
+		else if (value == "compare") {
+			res = SchemeOptions::RunType::CompareToSolution;
+		}
+		else {
+			throw invalid_argument("");
+		}
+	}
+	catch (...) { exit(1); }
+
+	return res;
+}
+
+enum SchemeOptions::Scheme CommandLineArgumentHandler::ParseValueForScheme(string value) {
+	enum SchemeOptions::Scheme res = SchemeOptions::Scheme::NoScheme;
+	try {
+		if (value == "max-group") {
+			res = SchemeOptions::Scheme::MaxGroup;
+		}
+		else if (value == "min-score") {
+			res = SchemeOptions::Scheme::MinScore;
+		}
+		else if (value == "min-frame") {
+			res = SchemeOptions::Scheme::MinFrameSize;
+		}
+		else if (value == "max-density") {
+			res = SchemeOptions::Scheme::MaxDensity;
+		}
+		else if (value == "min-frame-max-density") {
+			res = SchemeOptions::Scheme::MinFrameMaxDensity;
+		}
+		else {
+			throw invalid_argument("");
+		}
+	}
+	catch (...) { exit(1); }
+
 	return res;
 }

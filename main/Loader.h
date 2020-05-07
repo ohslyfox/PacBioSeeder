@@ -6,18 +6,18 @@
 #include <iostream>
 #include <fstream>
 #include <sstream>
+#include "SchemeOptions.h"
 
 using namespace std;
 
 class Loader {
 public:
-	Loader();
-
-	// methods
+	void LoadFileIntoOptions(SchemeOptions* options);
+private:
+	vector<int> skipped;
 	vector<char> LoadFaFile(string filePath);
 	vector<vector<char>> LoadFastQReads(string filePath, int amountToRead);
 	vector<int> LoadSolutions(string filePath, int amountToRead);
-private:
 };
 
 #endif

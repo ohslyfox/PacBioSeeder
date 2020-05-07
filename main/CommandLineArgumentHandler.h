@@ -13,6 +13,8 @@ public:
 private:
 	SchemeOptions* GetOptionsFromArgs(int argc, char** argv);
 	SchemeOptions* GetOptionsFromCommandLine();
+	enum SchemeOptions::RunType ParseValueForRunType(string value);
+	enum SchemeOptions::Scheme ParseValueForScheme(string value);
 };
 
 #endif

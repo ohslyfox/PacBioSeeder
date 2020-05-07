@@ -3,6 +3,7 @@
 
 #include <vector>
 #include <iostream>
+#include <fstream>
 #include <algorithm>
 #include <unordered_map>
 #include <unordered_set>
@@ -30,6 +31,8 @@ private:
 	vector<int> MaxGroupScheme(vector<char> pacBioRead);
 	vector<int> MinScoreScheme(vector<char> pacBioRead);
 	vector<int> MinFrameSizeScheme(vector<char> pacBioRead);
+
+	void OutputResults(vector<vector<int>> foundLocations);
 };
 
 #endif

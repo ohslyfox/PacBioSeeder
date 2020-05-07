@@ -1,7 +1,21 @@
 #include "Loader.h"
 
-Loader::Loader() {
-	// do nothing
+void Loader::LoadFileIntoOptions(SchemeOptions* options) {
+	try {
+		int amountToRead = options->ReadsToTest <= 0 ? INT32_MAX : options->ReadsToTest;
+		options->ReferenceGenome = LoadFaFile(options->FileName + ".fa");
+		options->PacBioReads = LoadFastQReads(options->FileName + ".fastq", amountToRead);
+		if (options->RunType == SchemeOptions::RunType::CompareToSolution) {
+			options->Solutions = LoadSolutions(options->FileName + ".maf", amountToRead);
+		}
+
+		if (options->ReferenceGenome.size() < 1 ||
+			options->PacBioReads.size() < 1) {
+
+			throw invalid_argument("");
+		}
+	}
+	catch (...) { exit(1); }
 }
 
 vector<char> Loader::LoadFaFile(string filePath) {
@@ -45,15 +59,32 @@ vector<vector<char>> Loader::LoadFastQReads(string filePath, int amountToRead) {
 		if (file.is_open()) {
 			int count = 0;
 			int reads = 0;
+			int totalRead = 0;
 			string line;
 			while (reads < amountToRead && getline(file, line)) {
 				if (count % 4 == 1) {
 					vector<char> read;
+					bool add = true;
 					for(char c : line) {
-						read.push_back(c);
+						if (c == 'A' || c == 'a' ||
+							c == 'C' || c == 'c' ||
+							c == 'G' || c == 'g' ||
+							c == 'T' || c == 't') {
+							read.push_back(c);
+						}
+						else {
+							add = false;
+							break;
+						}
 					}
-					res.push_back(read);
-					reads++;
+					if (add) {
+						res.push_back(read);
+						reads++;
+					}
+					else {
+						skipped.push_back(totalRead);
+					}
+					totalRead++;
 				}
 				count++;
 			}
@@ -78,12 +109,16 @@ vector<int> Loader::LoadSolutions(string filePath, int amountToRead) {
 		file.open(filePath, ifstream::in);
 
 		if (file.is_open()) {
+			int totalCount = 0;
 			int count = 0;
 			string str;
 			while (count < amountToRead && getline(file, str)) {
 				if (str.substr(0,5).compare("s ref") == 0) {
-					res.push_back(stoi(str.substr(6, 4)));
-					count++;
+					if (find(skipped.begin(), skipped.end(), totalCount) == skipped.end()) {
+						res.push_back(stoi(str.substr(6, 4)));
+						count++;
+					}
+					totalCount++;
 				}
 			}
 

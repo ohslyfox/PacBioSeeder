@@ -28,26 +28,7 @@ void HashMapClusteringScheme::ExecuteScheme() {
 		}
 	}
 
-	if (foundLocations.size() > 0) {
-		for (int i = 0; i < this->Options->PacBioReads.size(); i++) {
-			switch (this->Options->RunType) {
-			case SchemeOptions::RunType::ResultsOnly:
-				for (int location : foundLocations[i]) {
-					cout << "PacBio read (" << i+1 << ")" << " derived location " << location << "." << endl;
-				}
-				break;
-			case SchemeOptions::RunType::CompareToSolution:
-				for (int location : foundLocations[i]) {
-					cout << "PacBio read (" << i+1 << ")" << " derived location " << location << "." << endl;
-					cout << "Actual location " << this->Options->Solutions[i] << endl;
-					cout << "Delta = " << abs(location - this->Options->Solutions[i]) << endl << endl;
-				}
-				break;
-			default:
-				exit(1);
-			}
-		}
-	}
+	OutputResults(foundLocations);
 }
 
 vector<int> HashMapClusteringScheme::MinFrameSizeScheme(vector<char> pacBioRead) {
@@ -109,6 +90,8 @@ vector<int> HashMapClusteringScheme::MaxGroupScheme(vector<char> pacBioRead) {
 			}
 		}
 	}
+
+	if (locationList.size() <= 0) return res;
 
 	sort(locationList.begin(), locationList.end());
 
@@ -239,7 +222,7 @@ unordered_set<string> HashMapClusteringScheme::GenerateKmerLengthSubstrings(vect
 		for (int j = i; j < i + this->Options->KmerLength; j++) {
 			currentString += read.at(j);
 		}
-
+	
 		res.insert(currentString);
 	}
 
@@ -280,4 +263,107 @@ void HashMapClusteringScheme::CalculateDensityConcentration(int left, int right,
 	CalculateDensityConcentration(left, right / 2, locations, res);
 	// recursively compute right side
 	CalculateDensityConcentration(left + ((right - left) / 2), right, locations, res);
+}
+
+void HashMapClusteringScheme::OutputResults(vector<vector<int>> foundLocations) {
+	vector<string> outputStrings;
+	try {
+		if (foundLocations.size() > 0) {
+			outputStrings.push_back("----------------------------------------\n");
+			outputStrings.push_back("-------------pbseed results-------------\n");
+			switch (this->Options->RunType) {
+				case SchemeOptions::RunType::ResultsOnly:
+					outputStrings.push_back("run type: results only\n");
+					break;
+				case SchemeOptions::RunType::CompareToSolution:
+					outputStrings.push_back("run type: compare to solution\n");
+					break;
+				default:
+					exit(1);
+			}
+
+			switch (this->Options->Scheme) {
+				case SchemeOptions::Scheme::MaxGroup:
+					outputStrings.push_back("scheme: max group\n");
+					break;
+				case SchemeOptions::Scheme::MinScore:
+					outputStrings.push_back("scheme: min score\n");
+					break;
+				case SchemeOptions::Scheme::MinFrameSize:
+					outputStrings.push_back("scheme: min frame\n");
+					break;
+				default:
+					exit(1);
+			}
+			outputStrings.push_back("k-mer length: " + to_string(this->Options->KmerLength) + "\n");
+			outputStrings.push_back("reads tested: " + to_string(foundLocations.size()) + "\n");
+			outputStrings.push_back("file tested: " + this->Options->FileName + "\n");
+			outputStrings.push_back("----------------------------------------\n\n");
+
+			for (int i = 0; i < this->Options->PacBioReads.size(); i++) {
+				string value = "";
+				switch (this->Options->RunType) {
+				case SchemeOptions::RunType::ResultsOnly:
+					for (int location : foundLocations[i]) {
+						value = "PacBio read (" + to_string(i + 1) + ") derived location " + to_string(location) + ".\n";
+						outputStrings.push_back(value);
+					}
+					break;
+				case SchemeOptions::RunType::CompareToSolution:
+					for (int location : foundLocations[i]) {
+						value = "PacBio read (" + to_string(i + 1) + ") derived location " + to_string(location) + ".\n";
+						outputStrings.push_back(value);
+						value = "Actual location " + to_string(this->Options->Solutions[i]) + ".\n";
+						outputStrings.push_back(value);
+						value = "Delta = " + to_string(abs(location - this->Options->Solutions[i])) + ".\n\n";
+						outputStrings.push_back(value);
+					}
+					break;
+				default:
+					exit(1);
+				}
+			}
+
+			if (this->Options->OutputFileName == "console") {
+				for (string val : outputStrings) {
+					cout << val;
+				}
+			}
+			else {
+				// does file exist?
+				int fileNumber = 1;
+				string fileName = this->Options->OutputFileName;
+				while (true) {
+					struct stat buffer;
+					string temp = fileName + to_string(fileNumber) + ".txt";
+					if (stat(temp.c_str(), &buffer) == 0) {
+						fileNumber++;
+					}
+					else {
+						fileName = temp;
+						break;
+					}
+				}
+
+				ofstream outFile;
+				outFile.open(fileName);
+				if (outFile.good()) {
+					for (string val : outputStrings) {
+						outFile << val;
+					}
+
+					outFile.close();
+				}
+				else {
+					throw invalid_argument("");
+				}
+			}
+		}
+		else {
+			cout << "No results to output.";
+		}
+	}
+	catch (...) {
+		exit(1);
+	}
 }
