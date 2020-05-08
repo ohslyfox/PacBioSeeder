@@ -9,7 +9,7 @@ To run on the command line:
 runtype:
 	
 * "execute" - simply execute the scheme and output the result
-* "compare" - execute the scheme and compare true solution
+* "compare" - execute the scheme and compare results to true solution
 
 scheme:
 
